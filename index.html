@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Eléctrico - Sonoff POW</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <h1>⚡ Medición de Consumo Electrica Smart</h1>
+                <span class="subtitle">Dispositivo Sonoff POW</span>
+            </div>
+            <div class="header-right">
+                <span class="status-indicator" id="statusIndicator"></span>
+                <span id="statusText" class="status-text">Conectando...</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- KPIs -->
+        <section class="kpi-grid" id="kpiGrid">
+            <div class="kpi-card">
+                <div class="kpi-icon">📊</div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Consumo Total</span>
+                    <span class="kpi-value" id="kpiTotal">0</span>
+                    <span class="kpi-unit">kWh</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">📅</div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Promedio Diario</span>
+                    <span class="kpi-value" id="kpiPromedio">0</span>
+                    <span class="kpi-unit">kWh/día</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">🔴</div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Hora Mayor Consumo</span>
+                    <span class="kpi-value" id="kpiHoraPico">--:--</span>
+                    <span class="kpi-unit" id="kpiHoraPicoUnit">kWh promedio</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Controles -->
+        <section class="controls">
+            <div class="controls-group">
+                <button class="btn btn-active" data-view="horas" id="btnHoras">⏰ Por Horas</button>
+                <button class="btn" data-view="dias" id="btnDias">📆 Por Días</button>
+            </div>
+            <div class="controls-group">
+                <div class="date-inputs">
+                    <div class="date-field">
+                        <label for="fechaInicio">Desde</label>
+                        <input type="date" id="fechaInicio">
+                    </div>
+                    <div class="date-field">
+                        <label for="fechaFin">Hasta</label>
+                        <input type="date" id="fechaFin">
+                    </div>
+                    <button class="btn btn-secondary" id="btnAplicarRango">📌 Aplicar</button>
+                </div>
+            </div>
+            <div class="controls-group">
+                <button class="btn btn-pdf" id="btnPDF">📄 Generar PDF</button>
+            </div>
+        </section>
+
+        <!-- Gráfico -->
+        <section class="chart-container">
+            <canvas id="consumoChart"></canvas>
+        </section>
+
+        <!-- Sección Comparativa de Períodos -->
+        <section class="comparativa-section" id="comparativaSection">
+            <div class="section-header">
+                <h2>📊 Comparativa de Períodos</h2>
+                <span class="section-subtitle">Compara el consumo entre dos períodos</span>
+            </div>
+
+            <div class="comparativa-controls">
+                <div class="periodo-inputs">
+                    <div class="periodo-group">
+                        <span class="periodo-badge periodo1-badge">Período 1</span>
+                        <div class="date-field">
+                            <label>Desde</label>
+                            <input type="date" id="compFecha1Inicio">
+                        </div>
+                        <div class="date-field">
+                            <label>Hasta</label>
+                            <input type="date" id="compFecha1Fin">
+                        </div>
+                    </div>
+                    <div class="periodo-group">
+                        <span class="periodo-badge periodo2-badge">Período 2</span>
+                        <div class="date-field">
+                            <label>Desde</label>
+                            <input type="date" id="compFecha2Inicio">
+                        </div>
+                        <div class="date-field">
+                            <label>Hasta</label>
+                            <input type="date" id="compFecha2Fin">
+                        </div>
+                    </div>
+                </div>
+                <div class="comparativa-actions">
+                    <div class="controls-group">
+                        <button class="btn btn-comp" data-comp-view="horas" id="btnCompHoras">⏰ Por Horas</button>
+                        <button class="btn btn-comp-active" data-comp-view="dias" id="btnCompDias">📆 Por Días</button>
+                    </div>
+                    <button class="btn btn-secondary" id="btnComparar">🔍 Comparar</button>
+                </div>
+            </div>
+
+            <!-- Resultados Comparativa -->
+            <div class="comparativa-resultados" id="comparativaResultados" style="display:none;">
+                <!-- KPIs Comparativos -->
+                <div class="comp-kpi-grid">
+                    <div class="comp-kpi-card">
+                        <div class="comp-kpi-label">Período 1</div>
+                        <div class="comp-kpi-value" id="compTotal1">0</div>
+                        <div class="comp-kpi-sub">kWh total</div>
+                        <div class="comp-kpi-detail" id="compDias1">0 días</div>
+                    </div>
+                    <div class="comp-kpi-card comp-vs">
+                        <div class="comp-vs-badge">VS</div>
+                        <div class="comp-diff-value" id="compDiferencia">0</div>
+                        <div class="comp-diff-pct" id="compDiferenciaPct">(0%)</div>
+                        <div class="comp-diff-label" id="compDiferenciaLabel">sin cambio</div>
+                    </div>
+                    <div class="comp-kpi-card">
+                        <div class="comp-kpi-label">Período 2</div>
+                        <div class="comp-kpi-value" id="compTotal2">0</div>
+                        <div class="comp-kpi-sub">kWh total</div>
+                        <div class="comp-kpi-detail" id="compDias2">0 días</div>
+                    </div>
+                </div>
+                <!-- Gráfico Comparativo -->
+                <div class="chart-container comp-chart">
+                    <canvas id="comparativaChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Loading -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="spinner"></div>
+            <span>Cargando datos...</span>
+        </div>
+    </main>
+
+    <footer style="text-align: center; font-size: 0.8rem; color: #64748b; padding: 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; margin-top: 30px;">
+        <strong>Aviso de Automatización:</strong> Informamos que el presente reporte es fruto de la integración entre la telemetría del medidor Sonoff POW y modelos de Inteligencia Artificial Generativa para el procesamiento de datos. Si detecta alguna discrepancia inusual, le recomendamos verificar los registros brutos del dispositivo.
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
